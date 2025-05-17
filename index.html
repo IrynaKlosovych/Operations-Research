@@ -1,11 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Operations Research</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjs/lib/browser/math.js"></script>
+    <script defer src="./js/solve.js"></script>
+    <script defer src="./js/displayNumsAndSystems.js"></script>
+    <script defer src="./js/displayTables.js"></script>
+    <script defer src="./js/checkValues.js"></script>
+    <script defer src="./js/generateForm.js"></script>
+    <script defer src="./js/simplex.js"></script>
 </head>
+
 <body>
-    
+    <h2>Симплекс-метод калькулятор</h2>
+
+    <div id="forCreatingForm">
+        <label>Кількість змінних: <input type="number" id="numVars" value="2" min="2" max="20" oninput="checkValue(this)" onkeydown="allowOnlyNumbers(event)"></label>
+        <label>Кількість обмежень: <input type="number" id="numConstraints" value="2" min="1" max="50" oninput="checkValue(this)" onkeydown="allowOnlyNumbers(event)"></label>
+        <button onclick="generateForm()">Згенерувати форму</button>
+    </div>
+
+    <div id="inputMessage"></div>
+    <div id="formToFill"></div>
+
+    <div id="result"></div>
 </body>
+
 </html>
