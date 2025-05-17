@@ -1,0 +1,77 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    font-family: sans-serif;
+    padding: 20px;
+    background: #f4f4f4;
+}
+
+div#forCreatingForm {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 5px 0;
+}
+
+div#forCreatingForm>label,
+div#forCreatingForm>button {
+    margin-top: 10px;
+}
+
+div#forCreatingForm>button,
+div#formToFill>button {
+    width: 30%;
+    height: 25px
+}
+
+input[type="number"] {
+    margin: 5px 0;
+    padding: 5px;
+}
+
+select {
+    padding: 5px;
+}
+
+div#formToFill input {
+    width: 60px
+}
+
+#inputMessage {
+    color: red
+}
+
+.system {
+    display: block;
+    margin-top: 10px;
+    font-size: 20px;
+}
+
+.system>div {
+    margin: 5px 0;
+}
+
+.system mrow {
+    padding: 5px 0;
+}
+
+table {
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+td,
+th {
+    border: 1px solid #333;
+    padding: 5px 10px;
+    text-align: center;
+}
+
+td{
+    width: fit-content;
+    min-width: 70px;
+    height: 70px;
+}
