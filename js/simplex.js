@@ -13,11 +13,15 @@ class SimplexSolver {
         this.slackVarsCount = this.countSlack();
         this.artificialVarsCount = this.countArtificial();
 
-        this.pivotRow = 0;
-        this.pivotCol = 0;
+        this.pivotRow;
+        this.pivotCol;
         this.pivotElement = NaN;
 
         this.delta = [];
+
+        this.isOver = false;
+        this.result;
+        this.resultDisplayRow = "";
     }
 
     countArtificial() {
@@ -40,224 +44,174 @@ class SimplexSolver {
     }
 }
 
-function simplexCount(simplex){
+function simplexCount(simplex) {
+    let div = document.createElement("div");
 
-
-    
+    while (!simplex.isOver) {
+        simplex = checkResult(simplex);
+        console.log(simplex);
+        if (simplex.isOver) break;
+        simplex = chosePivoteRow(simplex);
+        div.appendChild(generateMidTable(simplex));
+        div.appendChild(generateBaseTable(simplex));
+    }
+    let resDiv = document.createElement("div");
+    resDiv.innerHTML = simplex.resultDisplayRow;
+    div.appendChild(resDiv);
+    return div;
 }
 
-function countDelta(simplex) {
-    let objMult = [];
-    let deltaRow = [];
-    simplex.table.objRow.forEach(elementObj => {
-        const keyObj = Object.keys(elementObj)[0];
-        simplex.table.A0Column.forEach(elementA0 => {
-            const keyA0 = Object.keys(elementA0)[0];
+function chosePivoteColumn(column1, column2, isMax) {
 
-            if (keyObj === keyA0) {
-                const frac = elementObj[keyObj];
-                objMult.push({ [keyObj]: frac });
+    const m1 = column1.partM;
+    const m2 = column2.partM;
+    const p1 = column1.partWithoutM;
+    const p2 = column2.partWithoutM;
+
+    if (isMax === true) {
+        if (math.smaller(m1, m2) && math.smaller(m1, 0)) {
+            return column1;
+        } else if (math.smaller(m2, m1) && math.smaller(m2, 0)) {
+            return column2;
+        } else if (math.equal(m1, m2)) {
+            if (math.smaller(p1, p2) && math.smaller(p1, 0)) {
+                return column1;
+            } else if (math.smaller(p2, p1) && math.smaller(p2, 0)) {
+                return column2;
             }
-        });
-    });
-
-    let deltaA0 = { "partM": math.fraction(0), "partWithoutM": math.fraction(0) };
-    let deltaA0Res = "";
-    objMult.forEach(elementMult => {
-        const keyMult = Object.keys(elementMult)[0];
-
-        simplex.table.A0Column.forEach(elementA0 => {
-            const keyA0 = Object.keys(elementA0)[0];
-
-            if (keyMult === keyA0) {
-                if (elementMult[keyMult] === Number.MAX_VALUE) {
-                    deltaA0.partM = math.add(deltaA0.partM, math.multiply(math.fraction(1), elementA0[keyA0]));
-                }
-                else if (elementMult[keyMult] === Number.MIN_VALUE) {
-                    deltaA0.partM = math.add(deltaA0.partM, math.multiply(math.fraction(-1), elementA0[keyA0]));
-                } else {
-                    deltaA0.partWithoutM = math.add(deltaA0.partWithoutM, math.multiply(elementMult[keyMult], elementA0[keyA0]));
-                }
-            }
-        });
-    });
-    if (deltaA0.partM.n !== 0n) {
-        deltaA0Res += displayFraction(deltaA0.partM, true) + "M";
-        if (deltaA0.partWithoutM.n !== 0n) {
-            deltaA0Res += displayFraction(deltaA0.partWithoutM);
         }
+        return column1;
     }
     else {
-        deltaA0Res += displayFraction(deltaA0.partWithoutM, true);
+        if (math.larger(m1, m2) && math.larger(m1, 0)) {
+            return column1;
+        } else if (math.larger(m2, m1) && math.larger(m2, 0)) {
+            return column2;
+        } else if (math.equal(m1, m2)) {
+            if (math.larger(p1, p2) && math.larger(p1, 0)) {
+                return column1;
+            } else if (math.larger(p2, p1) && math.larger(p2, 0)) {
+                return column2;
+            }
+        }
+        return column1;
     }
-    deltaRow.push(deltaA0Res);
+}
 
-    let pivotColumn = { "name": "", "partM": math.fraction(0), "partWithoutM": math.fraction(0) };///
-    let isMax = simplex.objective.objectiveType === "max" ? true : false;///
+function chosePivoteRow(simplex) {
+    //вибирати рядок
+    let arrRows;
+    let min = { "name": "", "valueOfNum": math.fraction(Number.MAX_VALUE), "valueOfRatio": math.fraction(Number.MAX_VALUE), "index": -1 };
+    if (hasKeyInNestedArray(simplex.table.varsRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.varsRows;
+    }
+    if (hasKeyInNestedArray(simplex.table.slackRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.slackRows;
+    }
+    if (hasKeyInNestedArray(simplex.table.artificialRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.artificialRows;
+    }
 
-    let objForDelta = [];
+    arrRows.forEach((row, index) => {
+        const cell = row.find(obj => obj.hasOwnProperty(simplex.pivotCol.name));
+        if (!cell) return;
 
-    simplex.table.A0Column.forEach(elementA0 => {
-        const keyA0 = Object.keys(elementA0)[0];
-        objMult.forEach(elementMult => {
-            const keyMult = Object.keys(elementMult)[0];
-            if (keyMult === keyA0) {
-                objForDelta.push(elementMult[keyMult]);
-            }
-        });
-    });
-
-    const varsRows = simplex.table.varsRows;
-    const columnKeys = varsRows[0].map(obj => Object.keys(obj)).flat();
-    columnKeys.forEach(key => {
-        let index = 0;
-        let deltaElem = { "partM": math.fraction(0), "partWithoutM": math.fraction(0) };
-        varsRows.map(row => {
-            for (let i = 0; i < objForDelta.length; i++) {
-                if (i === index) {
-                    const cell = row.find(obj => obj.hasOwnProperty(key));
-                    if (objForDelta[i] === Number.MAX_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(1), cell[key]));
-                    }
-                    else if (objForDelta[i] === Number.MIN_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(-1), cell[key]));
-                    } else {
-                        deltaElem.partWithoutM = math.add(deltaElem.partWithoutM, math.multiply(objForDelta[i], cell[key]));
-                    }
-                }
-            }
-            index++;
-        });
-
-        const foundObj = simplex.table.objRow.find(obj => obj.hasOwnProperty(key));
-
-        if (foundObj[key] === Number.MAX_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(-1));
-        }
-        else if (foundObj[key] === Number.MIN_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(1));
-        } else {
-            deltaElem.partWithoutM = math.subtract(deltaElem.partWithoutM, math.fraction(foundObj[key]));
-        }
-
-        let deltaRes = "";
-        if (deltaElem.partM.n !== 0n) {
-            deltaRes += displayFraction(deltaElem.partM, true) + "M";
-            if (deltaElem.partWithoutM.n !== 0n) {
-                deltaRes += displayFraction(deltaElem.partWithoutM);
-            }
-        }
-        else {
-            deltaRes += displayFraction(deltaElem.partWithoutM, true);
-        }
-        deltaRow.push(deltaRes);
-    });
-
-
-    const slackRows = simplex.table.slackRows;
-    const columnKeysSlack = slackRows[0].map(obj => Object.keys(obj)).flat();
-    columnKeysSlack.forEach(key => {
-        let index = 0;
-        let deltaElem = { "partM": math.fraction(0), "partWithoutM": math.fraction(0) };
-        slackRows.map(row => {
-            for (let i = 0; i < objForDelta.length; i++) {
-                if (i === index) {
-                    const cell = row.find(obj => obj.hasOwnProperty(key));
-                    if (objForDelta[i] === Number.MAX_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(1), cell[key]));
-                    }
-                    else if (objForDelta[i] === Number.MIN_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(-1), cell[key]));
-                    } else {
-                        deltaElem.partWithoutM = math.add(deltaElem.partWithoutM, math.multiply(objForDelta[i], cell[key]));
+        const value = cell[simplex.pivotCol.name];
+        if (!math.smallerEq(value, math.fraction(0))) {
+            simplex.table.A0Column.forEach((a0Row, indexA0) => {
+                const a0Key = Object.keys(a0Row)[0];
+                const a0Value = a0Row[a0Key];
+                if (index === indexA0) {
+                    let ratio = math.divide(a0Value, value);
+                    if (math.smaller(ratio, min.valueOfRatio)) {
+                        min.name = a0Key;
+                        min.valueOfNum = value;
+                        min.valueOfRatio = ratio;
+                        min.index = index;
                     }
                 }
-            }
-            index++;
-        });
-
-        const foundObj = simplex.table.objRow.find(obj => obj.hasOwnProperty(key));
-
-        if (foundObj[key] === Number.MAX_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(-1));
+            });
         }
-        else if (foundObj[key] === Number.MIN_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(1));
-        } else {
-            deltaElem.partWithoutM = math.subtract(deltaElem.partWithoutM, math.fraction(foundObj[key]));
-        }
-
-        let deltaRes = "";
-        if (deltaElem.partM.n !== 0n) {
-            deltaRes += displayFraction(deltaElem.partM, true) + "M";
-            if (deltaElem.partWithoutM.n !== 0n) {
-                deltaRes += displayFraction(deltaElem.partWithoutM);
-            }
-        }
-        else {
-            deltaRes += displayFraction(deltaElem.partWithoutM, true);
-        }
-        deltaRow.push(deltaRes);
     });
-
-
-    const artificialRows = simplex.table.artificialRows;
-    const columnKeysArtificial = artificialRows[0].map(obj => Object.keys(obj)).flat();
-    columnKeysArtificial.forEach(key => {
-        let index = 0;
-        let deltaElem = { "partM": math.fraction(0), "partWithoutM": math.fraction(0) };
-        artificialRows.map(row => {
-            for (let i = 0; i < objForDelta.length; i++) {
-                if (i === index) {
-                    const cell = row.find(obj => obj.hasOwnProperty(key));
-                    if (objForDelta[i] === Number.MAX_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(1), cell[key]));
-                    }
-                    else if (objForDelta[i] === Number.MIN_VALUE) {
-                        deltaElem.partM = math.add(deltaElem.partM, math.multiply(math.fraction(-1), cell[key]));
-                    } else {
-                        deltaElem.partWithoutM = math.add(deltaElem.partWithoutM, math.multiply(objForDelta[i], cell[key]));
-                    }
-                }
-            }
-            index++;
-        });
-
-        const foundObj = simplex.table.objRow.find(obj => obj.hasOwnProperty(key));
-
-        if (foundObj[key] === Number.MAX_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(-1));
+    simplex.pivotRow = min;
+    simplex.pivotElement = min.valueOfNum;
+    // змінити базис ключ
+    let newA0;
+    simplex.table.A0Column.forEach((a0Row, index) => {
+        const a0Key = Object.keys(a0Row)[0];
+        if (a0Key === simplex.pivotRow.name) {
+            newA0 = renameNestedKeyAtSamePosition(simplex.table.A0Column, a0Key, simplex.pivotCol.name);
         }
-        else if (foundObj[key] === Number.MIN_VALUE) {
-            deltaElem.partM = math.add(deltaElem.partM, math.fraction(1));
-        } else {
-            deltaElem.partWithoutM = math.subtract(deltaElem.partWithoutM, math.fraction(foundObj[key]));
-        }
-
-        let deltaRes = "";
-        if (deltaElem.partM.n !== 0n) {
-            deltaRes += displayFraction(deltaElem.partM, true) + "M";
-            if (deltaElem.partWithoutM.n !== 0n) {
-                deltaRes += displayFraction(deltaElem.partWithoutM);
-            }
-        }
-        else {
-            deltaRes += displayFraction(deltaElem.partWithoutM, true);
-        }
-        deltaRow.push(deltaRes);
     });
+    simplex.table.A0Column = newA0;
 
-    simplex.delta = deltaRow;
+    //видаляти лишні штучні змінні (в масиві + цільовій)
+    const hasKey = simplex.table.artificialRows.some(row =>
+        row.some(obj => obj.hasOwnProperty(simplex.pivotRow.name))
+    );
+    if (hasKey) {
+        const cleanedArt = simplex.table.artificialRows.map(row =>
+            row.filter(obj => !obj.hasOwnProperty(simplex.pivotRow.name))
+        );
+        simplex.table.artificialRows = cleanedArt;
+        const cleanedObj = simplex.table.objRow.filter(obj =>
+            !obj.hasOwnProperty(simplex.pivotRow.name)
+        );
+        simplex.table.objRow = cleanedObj;
+        simplex.artificialVarsCount--;
+    }
     return simplex;
 }
 
-function chosePivoteColumn(){
 
+function checkResult(simplex) {
+    // перевіряти щодо макс і мін
+    //відповідно чи всі елементи в індексному рядку ок
+    // чи відсутні штучні змінні
+    simplex.table.artificialRows = simplex.table.artificialRows.filter(subArray => subArray.length > 0);
+
+    if (simplex.pivotCol.name.length === 0 && simplex.table.artificialRows.length === 0) {
+        simplex.resultDisplayRow = "Знайдено оптимальне значення";
+        simplex.result = simplex.delta[0];
+        simplex.isOver = true;
+        return simplex;
+    }
+    if (simplex.pivotCol.name.length === 0 && simplex.table.artificialRows.length !== 0) {
+        simplex.resultDisplayRow = "Нема рішення. Штучні змінні не виведено";
+        simplex.isOver = true;
+        return simplex;
+    }
+    // чи всі співвіднощення ок
+
+    let arrRows;
+    let countNums = 0;
+    if (hasKeyInNestedArray(simplex.table.varsRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.varsRows;
+    }
+    if (hasKeyInNestedArray(simplex.table.slackRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.slackRows;
+    }
+    if (hasKeyInNestedArray(simplex.table.artificialRows, simplex.pivotCol.name)) {
+        arrRows = simplex.table.artificialRows;
+    }
+
+    arrRows.forEach(row => {
+        const cell = row.find(obj => obj.hasOwnProperty(simplex.pivotCol.name));
+        if (!cell) return;
+
+        const value = cell[simplex.pivotCol.name];
+        if (math.smallerEq(value, math.fraction(0))) {
+            countNums++;
+        }
+    });
+
+    if (countNums === simplex.constraints.length) {
+        simplex.resultDisplayRow = "Нема рішення. В напрямному стовпці всі значення менші або рівні 0";
+        simplex.isOver = true;
+    }
+
+    return simplex;
 }
-
-// function checkResult(){
-
-// }
 
 
 function toCanonicalForm(constraints) {

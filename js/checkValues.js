@@ -32,7 +32,6 @@ function checkInteger() {
     return allValid;
 }
 
-
 function convertOperatorToMathMLOperator(op) {
     switch (op) {
         case "<=": return "&le;";
@@ -40,4 +39,62 @@ function convertOperatorToMathMLOperator(op) {
         case "=": return "=";
         default: return op;
     }
+}
+
+function hasKeyInArray(arr, key) {
+    return arr.some(obj => Object.prototype.hasOwnProperty.call(obj, key));
+}
+
+function hasKeyInNestedArray(arr, key) {
+    return arr.some(innerArr => hasKeyInArray(innerArr, key));
+}
+
+function renameNestedKeyAtSamePosition(array, oldKey, newKey) {
+    return array.map(obj => {
+        const newObj = {};
+        const keys = Object.keys(obj); // порядок ключів
+
+        for (const key of keys) {
+            if (key === oldKey) {
+                newObj[newKey] = obj[key];
+            } else {
+                newObj[key] = obj[key];
+            }
+        }
+
+        return newObj;
+    });
+}
+
+
+function deepCloneWithFractions(obj) {
+    if (Array.isArray(obj)) {
+        return obj.map(deepCloneWithFractions);
+    } else if (obj && typeof obj === 'object') {
+        if (obj instanceof math.Fraction) {
+            return math.fraction(obj.s * obj.n, obj.d);
+        }
+
+        const newObj = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                newObj[key] = deepCloneWithFractions(obj[key]);
+            }
+        }
+        return newObj;
+    }
+    return obj;
+}
+
+function cloneA0ColumnWithFractions(A0Column) {
+    return A0Column.map(cell => {
+        const [key] = Object.keys(cell);
+        const value = cell[key];
+
+        if (value instanceof math.Fraction) {
+            return { [key]: math.fraction(value.s * value.n, value.d) };
+        }
+
+        return { [key]: value };
+    });
 }

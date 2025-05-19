@@ -46,25 +46,20 @@ function solve() {
         });
     }
 
-    // console.log("Objective Type:", objectiveType);
-    // console.log("Objective Coefficients:", objectiveCoeffs);
-    // console.log("Constraints:", constraints);
 
     constraints = toCanonicalForm(constraints);
-    // console.log("Canonical Constraints:", constraints);
+
     let simplex = new SimplexSolver(objective, constraints);
     result.innerHTML += generateSystemInequation(simplex);
 
-    // console.log("Simplex\n-----------------------------------")
-    // console.log(simplex)
+
 
     simplex = generateBase(simplex);
 
-    console.log("new simplex");
-    console.log(simplex);
 
     result.innerHTML += generateSystemEquation(simplex);
     result?.appendChild(generateBaseTable(simplex));
 
-    
+
+    result.appendChild(simplexCount(simplex));
 }

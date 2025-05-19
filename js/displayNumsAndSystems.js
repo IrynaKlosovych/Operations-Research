@@ -1,4 +1,4 @@
-function displayFraction(fraction, isFirst = false) {
+function displayFraction(fraction, isFirst = false, isInBrackets = false) {
     let sign = '';
 
     if (fraction.s === -1n) {
@@ -7,18 +7,30 @@ function displayFraction(fraction, isFirst = false) {
         sign = '+';
     }
 
+    let mathContent = '';
+
     if (fraction.d !== 1n) {
-        return `<math>
-  <mo>${sign}</mo>
-  <mfrac>
+        mathContent = `<mfrac>
     <mrow><mo>${fraction.n}</mo></mrow>
     <mrow><mo>${fraction.d}</mo></mrow>
-  </mfrac>
-</math>`;
+  </mfrac>`;
     } else {
-        return `<math><mo>${sign} ${fraction.n}</mo></math>`;
+        mathContent = `<mo>${fraction.n}</mo>`;
     }
+
+    if (isInBrackets && fraction.s === -1n) {
+        return `<math>
+  <mo>(</mo>
+  <mo>${sign}</mo>${mathContent}<mo>)</mo>
+</math>`;
+    }
+
+    return `<math>
+  <mo>${sign}</mo>
+  ${mathContent}
+</math>`;
 }
+
 
 function displayInt(number, isFirst = false) {
     let sign = '';
