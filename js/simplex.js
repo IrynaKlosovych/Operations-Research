@@ -13,8 +13,12 @@ class SimplexSolver {
         this.slackVarsCount = this.countSlack();
         this.artificialVarsCount = this.countArtificial();
 
-        this.pivotRow;
-        this.pivotCol;
+        this.pivotRow = {
+            "name": "", "valueOfNum": NaN,
+            "valueOfRatio": NaN,
+            "index": -1
+        };
+        this.pivotCol = { "name": "", "partM": math.fraction(0), "partWithoutM": math.fraction(0) };
         this.pivotElement = NaN;
 
         this.delta = [];
@@ -46,14 +50,34 @@ class SimplexSolver {
 
 function simplexCount(simplex) {
     let div = document.createElement("div");
+    simplex = countDelta(simplex);
+
+    simplex = checkResult(simplex);
+    if (!simplex.isOver) {
+        simplex = chosePivoteRow(simplex);
+        div.appendChild(generateBaseTable(simplex));
+    }
+    else {
+        div.appendChild(generateBaseTable(simplex, true));
+    }
+    simplex = deleteArtificial(simplex);
+    simplex = changeBase(simplex);
 
     while (!simplex.isOver) {
-        simplex = checkResult(simplex);
-        console.log(simplex);
-        if (simplex.isOver) break;
-        simplex = chosePivoteRow(simplex);
         div.appendChild(generateMidTable(simplex));
+        simplex = countDelta(simplex);
+
+        simplex = checkResult(simplex);
+        if (simplex.isOver) {
+            div.appendChild(generateBaseTable(simplex, true));
+            break;
+        }
+        simplex = chosePivoteRow(simplex);
+
+
         div.appendChild(generateBaseTable(simplex));
+        simplex = deleteArtificial(simplex);
+        simplex = changeBase(simplex);
     }
     let resDiv = document.createElement("div");
     resDiv.innerHTML = simplex.resultDisplayRow;
@@ -135,16 +159,10 @@ function chosePivoteRow(simplex) {
     });
     simplex.pivotRow = min;
     simplex.pivotElement = min.valueOfNum;
-    // змінити базис ключ
-    let newA0;
-    simplex.table.A0Column.forEach((a0Row, index) => {
-        const a0Key = Object.keys(a0Row)[0];
-        if (a0Key === simplex.pivotRow.name) {
-            newA0 = renameNestedKeyAtSamePosition(simplex.table.A0Column, a0Key, simplex.pivotCol.name);
-        }
-    });
-    simplex.table.A0Column = newA0;
 
+    return simplex;
+}
+function deleteArtificial(simplex) {
     //видаляти лишні штучні змінні (в масиві + цільовій)
     const hasKey = simplex.table.artificialRows.some(row =>
         row.some(obj => obj.hasOwnProperty(simplex.pivotRow.name))
@@ -163,6 +181,18 @@ function chosePivoteRow(simplex) {
     return simplex;
 }
 
+function changeBase(simplex) {
+    // змінити базис ключ
+    let newA0;
+    simplex.table.A0Column.forEach((a0Row, index) => {
+        const a0Key = Object.keys(a0Row)[0];
+        if (a0Key === simplex.pivotRow.name) {
+            newA0 = renameNestedKeyAtSamePosition(simplex.table.A0Column, a0Key, simplex.pivotCol.name);
+        }
+    });
+    simplex.table.A0Column = newA0;
+    return simplex;
+}
 
 function checkResult(simplex) {
     // перевіряти щодо макс і мін

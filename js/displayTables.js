@@ -1,4 +1,4 @@
-function generateBaseTable(simplex) {
+function generateBaseTable(simplex, isOver = false) {
     let table = document.createElement("table");
     let fisrtTr = document.createElement("tr");
     let C = document.createElement("td");
@@ -37,12 +37,26 @@ function generateBaseTable(simplex) {
         let A0Td = document.createElement("td");
         A0Td.innerHTML = A0_key;
         constRow.appendChild(A0Td);
+        if (simplex.pivotRow?.index !== undefined && h === simplex.pivotRow.index && !isOver) {
+            constRow.classList.add("pivotRow");
+            keyTd.classList.add("tdName")
+        }
 
         for (let i = 0; i < simplex.varCount; i++) {
             for (const key in simplex.table.varsRows[h][i]) {
                 {
                     let td = document.createElement("td");
                     td.innerHTML += displayFraction(simplex.table.varsRows[h][i][key], true);
+
+
+                    let pivotKey = Object.keys(simplex.table.varsRows[h][i])[0];
+                    if (simplex.pivotRow?.index !== undefined && simplex.pivotCol?.name !== undefined && h === simplex.pivotRow.index && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotElem");
+                    }
+                    else if (simplex.pivotCol?.name !== undefined && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotCol");
+                    }
+
                     constRow.appendChild(td);
                 }
             }
@@ -54,6 +68,15 @@ function generateBaseTable(simplex) {
                 {
                     let td = document.createElement("td");
                     td.innerHTML += displayFraction(simplex.table.slackRows[h][i][key], true);
+
+                    let pivotKey = Object.keys(simplex.table.slackRows[h][i])[0];
+                    if (simplex.pivotRow?.index !== undefined && simplex.pivotCol?.name !== undefined && h === simplex.pivotRow.index && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotElem");
+                    }
+                    else if (simplex.pivotCol?.name !== undefined && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotCol");
+                    }
+
                     constRow.appendChild(td);
                 }
             }
@@ -64,6 +87,15 @@ function generateBaseTable(simplex) {
                 {
                     let td = document.createElement("td");
                     td.innerHTML += displayFraction(simplex.table.artificialRows[h][i][key], true);
+
+                    let pivotKey = Object.keys(simplex.table.artificialRows[h][i])[0];
+                    if (simplex.pivotRow?.index !== undefined && simplex.pivotCol?.name !== undefined && h === simplex.pivotRow.index && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotElem");
+                    }
+                    else if (simplex.pivotCol?.name !== undefined && simplex.pivotCol.name === pivotKey) {
+                        td.classList.add("pivotCol");
+                    }
+
                     constRow.appendChild(td);
                 }
             }
@@ -75,11 +107,12 @@ function generateBaseTable(simplex) {
     deltaTd.innerHTML = "&#916;";
     deltaTr.appendChild(deltaTd);
 
-    simplex = countDelta(simplex);
-
-    simplex.delta.forEach(elem => {
+    simplex.delta.forEach((elem, index) => {
         let td = document.createElement('td');
         td.innerHTML = elem;
+        if (index === 0 && isOver) {
+            td.classList.add("result");
+        }
         deltaTr.appendChild(td);
     });
 
@@ -136,13 +169,6 @@ function generateMidTable(simplex) {
         const allArrays = [...rows1, ...rows2, ...rows3];
 
         const elementInPivotColumn = allArrays.find(obj => obj.hasOwnProperty(simplex.pivotCol.name))?.[simplex.pivotCol.name];
-
-
-        console.log('elementInPivotColumn:', elementInPivotColumn);
-        console.log('pivot value:', oldA0Column[simplex.pivotRow.index][simplex.pivotCol.name]);
-        console.log('pivot element:', simplex.pivotElement);
-        console.log('current value:', oldA0Column[h][key]);
-
 
         let A0_key;
         if (h !== simplex.pivotRow.index) {

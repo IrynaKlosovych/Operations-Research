@@ -70,8 +70,28 @@ th {
     text-align: center;
 }
 
-td{
+td {
     width: fit-content;
     min-width: 70px;
     height: 70px;
+}
+
+.pivotRow {
+    background-color: #B2D7EB;
+}
+
+.pivotCol {
+    background-color: #CA98E6;
+}
+
+.pivotElem {
+    background-color: #E6157A;
+}
+
+.result {
+    background-color: #41D970;
+}
+
+.tdName {
+    background-color: #f4f4f4;
 }

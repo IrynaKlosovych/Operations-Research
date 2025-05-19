@@ -207,13 +207,6 @@ function countDelta(simplex) {
     }
     simplex.pivotCol = pivotColumn;
 
-    console.log("pivotCol:");
-    console.log(simplex.pivotCol);
-
-    console.log("pivotColumn");
-    console.log(pivotColumn);
-
-
     simplex.delta = deltaRow;
     return simplex;
 }

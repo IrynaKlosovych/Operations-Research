@@ -52,14 +52,9 @@ function solve() {
     let simplex = new SimplexSolver(objective, constraints);
     result.innerHTML += generateSystemInequation(simplex);
 
-
-
     simplex = generateBase(simplex);
 
-
     result.innerHTML += generateSystemEquation(simplex);
-    result?.appendChild(generateBaseTable(simplex));
-
 
     result.appendChild(simplexCount(simplex));
 }
